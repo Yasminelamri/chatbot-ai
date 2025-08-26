@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Test Serveur - Chatbot Jadara</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f0f2f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { color: #22c55e; font-weight: bold; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+        .btn { display: inline-block; padding: 10px 20px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
+        .btn:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Test du Serveur - Chatbot Jadara</h1>
+        
+        <div class="success">
+            ✅ Le serveur PHP fonctionne sur le port 9010 !
+        </div>
+        
+        <h2>📋 Tests disponibles :</h2>
+        <ul>
+            <li><a href="/chat" class="btn">🚀 Chatbot principal</a></li>
+            <li><a href="/test-tailwind" class="btn">🎨 Test Tailwind CSS</a></li>
+            <li><a href="/" class="btn">🏠 Page d'accueil</a></li>
+        </ul>
+        
+        <h2>🔧 Informations techniques :</h2>
+        <ul>
+            <li><strong>Port serveur :</strong> <span class="info">9010</span></li>
+            <li><strong>URL de base :</strong> <span class="info">http://127.0.0.1:9010</span></li>
+            <li><strong>Dossier public :</strong> <span class="info">public/</span></li>
+            <li><strong>Assets compilés :</strong> <span class="success">✅ CSS et JS prêts</span></li>
+        </ul>
+        
+        <h2>⚠️ Prochaines étapes :</h2>
+        <div class="warning">
+            <p>1. Vérifiez que Laravel Mix fonctionne (npm run dev)</p>
+            <p>2. Testez le chatbot sur <a href="/chat">/chat</a></p>
+            <p>3. Vérifiez que Tailwind CSS s'applique</p>
+        </div>
+        
+        <hr style="margin: 30px 0;">
+        <p style="text-align: center; color: #6b7280;">
+            🚀 Chatbot Jadara - Configuration Tailwind CSS terminée !
+        </p>
+    </div>
+</body>
+</html>
