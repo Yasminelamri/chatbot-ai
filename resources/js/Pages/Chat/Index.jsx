@@ -168,7 +168,7 @@ export default function Index({ messages, conversationId, conversations }) {
   const stopRecording = () => {
     if(mediaRecorder && isRecording) { 
       mediaRecorder.stop(); 
-      setIsRecording(false) 
+      setIsRecording(false)
     }
   }
 
@@ -433,9 +433,9 @@ export default function Index({ messages, conversationId, conversations }) {
                             🗑️
                           </button>
                         </div>
-                      )}
-                    </div>
-                    
+          )}
+        </div>
+
                     {isUser && (
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                         👤
@@ -469,47 +469,47 @@ export default function Index({ messages, conversationId, conversations }) {
           <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex items-end gap-3">
               <div className="flex-1 relative">
-                <input 
-                  type="text" 
-                  value={data.message} 
-                  onChange={(e) => setData('message', e.target.value)} 
+            <input
+              type="text"
+              value={data.message}
+              onChange={(e) => setData('message', e.target.value)}
                   placeholder="Tapez votre message..." 
                   className="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                />
+            />
               </div>
               
               <input ref={fileImageRef} type="file" accept="image/*" className="hidden" onChange={handlePickImage} />
-              <button 
-                type="button" 
-                onClick={() => fileImageRef.current?.click()} 
+            <button
+              type="button"
+              onClick={() => fileImageRef.current?.click()}
                 className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 title="Joindre une image"
-              >
+            >
                 📎
-              </button>
+            </button>
               
-              {!isRecording ? (
-                <button 
-                  type="button" 
-                  onClick={startRecording} 
+            {!isRecording ? (
+              <button
+                type="button"
+                onClick={startRecording}
                   className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   title="Enregistrer un message vocal"
-                >
+              >
                   🎤
-                </button>
-              ) : (
-                <button 
-                  type="button" 
-                  onClick={stopRecording} 
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={stopRecording}
                   className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
                   title="Arrêter l'enregistrement"
-                >
+              >
                   ⏹️
-                </button>
-              )}
+              </button>
+            )}
               
-              <button 
-                type="submit" 
+            <button
+              type="submit"
                 disabled={processing || (!data.message.trim() && !data.image && !data.audio)} 
                 className={`p-3 rounded-full transition-colors ${
                   processing || (!data.message.trim() && !data.image && !data.audio) 
@@ -519,7 +519,7 @@ export default function Index({ messages, conversationId, conversations }) {
                 title="Envoyer"
               >
                 ✈️
-              </button>
+            </button>
             </div>
             
             {(data.image || audioBlob) && (
@@ -527,7 +527,7 @@ export default function Index({ messages, conversationId, conversations }) {
                 {data.image && <span>📷 Image: {data.image.name}</span>}
                 {audioBlob && <span>🎤 Audio: {Math.round(audioBlob.size/1024)} Ko</span>}
               </div>
-            )}
+          )}
           </form>
         </div>
       </div>

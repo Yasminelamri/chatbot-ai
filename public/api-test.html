@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API FAQ - Jadara Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .method {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .url {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Test API FAQ - Jadara Chatbot</h1>
+    
+    <div class="container">
+        <h2>📚 Endpoints disponibles</h2>
+        
+        <div class="endpoint">
+            <span class="method">GET</span>
+            <div class="url">/api/faq</div>
+            <p>Récupère toute la FAQ</p>
+            <button onclick="testGetAllFaq()">Tester</button>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method">GET</span>
+            <div class="url">/api/faq/{id}</div>
+            <p>Récupère une question spécifique par son index</p>
+            <input type="number" id="faqId" value="0" min="0" max="14" style="width: 60px;">
+            <button onclick="testGetFaqById()">Tester</button>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method">GET</span>
+            <div class="url">/api/faq/search?q={query}</div>
+            <p>Recherche dans la FAQ par mot-clé</p>
+            <div class="search-box">
+                <input type="text" id="searchQuery" placeholder="Ex: bourse, RIB, contact...">
+                <button onclick="testSearchFaq()">Rechercher</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>📊 Résultats des tests</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+        
+        async function testGetAllFaq() {
+            try {
+                const response = await fetch(`${baseUrl}/api/faq`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('✅ Récupération de toute la FAQ', data, 'success');
+                } else {
+                    showResult('❌ Erreur lors de la récupération', data, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Erreur de connexion', { error: error.message }, 'error');
+            }
+        }
+        
+        async function testGetFaqById() {
+            const id = document.getElementById('faqId').value;
+            try {
+                const response = await fetch(`${baseUrl}/api/faq/${id}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Question FAQ #${id}`, data, 'success');
+                } else {
+                    showResult(`❌ Erreur pour la question #${id}`, data, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Erreur de connexion', { error: error.message }, 'error');
+            }
+        }
+        
+        async function testSearchFaq() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query.trim()) {
+                alert('Veuillez entrer un terme de recherche');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/faq/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`🔍 Résultats de recherche pour "${query}"`, data, 'success');
+                } else {
+                    showResult(`❌ Erreur de recherche pour "${query}"`, data, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Erreur de connexion', { error: error.message }, 'error');
+            }
+        }
+        
+        function showResult(title, data, type) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            
+            resultDiv.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+                <small>Timestamp: ${new Date().toLocaleString()}</small>
+            `;
+            
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+        }
+        
+        // Test automatique au chargement
+        window.onload = function() {
+            testGetAllFaq();
+        };
+    </script>
+</body>
+</html>

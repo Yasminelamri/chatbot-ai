@@ -42,3 +42,10 @@ Route::put('/chat/conversations/{conversation}', [ChatController::class, 'update
 Route::get('/chat/stats', [ChatController::class, 'stats'])->name('chat.stats');
 Route::get('/chat/export/conversations', [ChatController::class, 'exportConversationsCsv'])->name('chat.export.conversations');
 Route::get('/chat/export/faq', [ChatController::class, 'exportFaqCsv'])->name('chat.export.faq');
+
+// API Routes pour la FAQ
+Route::prefix('api')->group(function () {
+    Route::get('/faq', [\App\Http\Controllers\Api\FaqController::class, 'index']);
+    Route::get('/faq/{id}', [\App\Http\Controllers\Api\FaqController::class, 'show']);
+    Route::get('/faq/search', [\App\Http\Controllers\Api\FaqController::class, 'search']);
+});

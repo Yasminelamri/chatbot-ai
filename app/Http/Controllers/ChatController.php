@@ -53,7 +53,7 @@ class ChatController extends Controller
 
         $imagePath = null;
         $audioPath = null;
-        
+
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('messages/images', 'public');
         }
