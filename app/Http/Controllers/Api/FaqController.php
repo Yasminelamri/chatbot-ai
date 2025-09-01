@@ -17,25 +17,9 @@ class FaqController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Vérifier si le fichier FAQ existe
-            if (!file_exists(storage_path('app/faq.json'))) {
-                return response()->json([], 200);
-            }
-
-            // Lire le contenu du fichier JSON
-            $faqContent = file_get_contents(storage_path('app/faq.json'));
+            // Récupérer la FAQ depuis la base de données
+            $faqData = \App\Models\FAQ::all(['id', 'question', 'answer']);
             
-            // Décoder le JSON
-            $faqData = json_decode($faqContent, true);
-            
-            // Vérifier si le JSON est valide
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'error' => 'Format JSON invalide',
-                    'message' => 'Le fichier FAQ contient un JSON malformé'
-                ], 500);
-            }
-
             // Retourner la FAQ
             return response()->json($faqData, 200);
 
@@ -60,28 +44,10 @@ class FaqController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            // Vérifier si le fichier FAQ existe
-            if (!file_exists(storage_path('app/faq.json'))) {
-                return response()->json([
-                    'error' => 'FAQ non trouvée',
-                    'message' => 'Aucune FAQ disponible'
-                ], 404);
-            }
-
-            // Lire le contenu du fichier JSON
-            $faqContent = file_get_contents(storage_path('app/faq.json'));
-            $faqData = json_decode($faqContent, true);
+            // Récupérer la question depuis la base de données
+            $faqItem = \App\Models\FAQ::find($id);
             
-            // Vérifier si le JSON est valide
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'error' => 'Format JSON invalide',
-                    'message' => 'Le fichier FAQ contient un JSON malformé'
-                ], 500);
-            }
-
-            // Vérifier si l'index existe
-            if (!isset($faqData[$id])) {
+            if (!$faqItem) {
                 return response()->json([
                     'error' => 'Question non trouvée',
                     'message' => 'Aucune question trouvée avec cet identifiant'
@@ -89,7 +55,7 @@ class FaqController extends Controller
             }
 
             // Retourner la question spécifique
-            return response()->json($faqData[$id], 200);
+            return response()->json($faqItem, 200);
 
         } catch (\Exception $e) {
             // Log de l'erreur pour le débogage
@@ -121,35 +87,10 @@ class FaqController extends Controller
                 ], 400);
             }
 
-            // Vérifier si le fichier FAQ existe
-            if (!file_exists(storage_path('app/faq.json'))) {
-                return response()->json([], 200);
-            }
-
-            // Lire le contenu du fichier JSON
-            $faqContent = file_get_contents(storage_path('app/faq.json'));
-            $faqData = json_decode($faqContent, true);
-            
-            // Vérifier si le JSON est valide
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'error' => 'Format JSON invalide',
-                    'message' => 'Le fichier FAQ contient un JSON malformé'
-                ], 500);
-            }
-
-            // Rechercher dans les questions et réponses
-            $results = [];
-            $queryLower = mb_strtolower($query);
-            
-            foreach ($faqData as $index => $item) {
-                $questionLower = mb_strtolower($item['question']);
-                $responseLower = mb_strtolower($item['response']);
-                
-                if (str_contains($questionLower, $queryLower) || str_contains($responseLower, $queryLower)) {
-                    $results[] = array_merge($item, ['id' => $index]);
-                }
-            }
+            // Rechercher dans la base de données
+            $results = \App\Models\FAQ::where('question', 'like', "%{$query}%")
+                ->orWhere('answer', 'like', "%{$query}%")
+                ->get(['id', 'question', 'answer']);
 
             // Retourner les résultats de recherche
             return response()->json($results, 200);

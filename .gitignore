@@ -1,5 +1,6 @@
 # Laravel
 /node_modules
+/public/build
 /public/hot
 /public/storage
 /storage/*.key
@@ -13,34 +14,46 @@ Homestead.yaml
 auth.json
 npm-debug.log
 yarn-error.log
-
-# Build files
-/public/css
-/public/js
-/public/mix-manifest.json
-
-# Storage
-/storage/app/public/*
-!/storage/app/public/.gitkeep
-
-# Cache
-/bootstrap/cache/*
-!/bootstrap/cache/.gitkeep
+/.fleet
+/.idea
+/.vscode
 
 # Logs
-/storage/logs/*
-!/storage/logs/.gitkeep
+storage/logs/*.log
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# Cache
+bootstrap/cache/*.php
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+
+# Database
+*.sqlite
+*.sqlite-journal
+database/*.sqlite
+database/*.db
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
 
 # Temporary files
 *.tmp
-*.temp
+*.bak
+*.backup
+*.old
+
+# Keep important demo files
+!database/database.sqlite
+!public/simple-chat.html

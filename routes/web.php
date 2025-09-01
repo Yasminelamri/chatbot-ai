@@ -7,6 +7,11 @@ Route::get('/', function () {
     return redirect()->route('chat.index');
 });
 
+// Route de test simple
+Route::get('/test', function () {
+    return 'Hello World - Test route fonctionne !';
+});
+
 // Route de test Tailwind CSS
 Route::get('/test-tailwind', function () {
     return view('test-tailwind');
@@ -17,9 +22,12 @@ Route::get('/test-inertia', function () {
     return view('test-inertia');
 })->name('test.inertia');
 
+// Route publique sans authentification
 Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+Route::get('/public-chat', [ChatController::class, 'index'])->name('chat.public');
 Route::get('/chat/new', [ChatController::class, 'new'])->name('chat.new');
 Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
+Route::post('/public-chat/send', [ChatController::class, 'send'])->name('chat.public.send');
 Route::put('/chat/messages/{message}', [ChatController::class, 'update'])->name('chat.update');
 Route::delete('/chat/messages/{message}', [ChatController::class, 'destroy'])->name('chat.destroy');
 Route::post('/chat/clear', [ChatController::class, 'clear'])->name('chat.clear');
@@ -42,6 +50,17 @@ Route::put('/chat/conversations/{conversation}', [ChatController::class, 'update
 Route::get('/chat/stats', [ChatController::class, 'stats'])->name('chat.stats');
 Route::get('/chat/export/conversations', [ChatController::class, 'exportConversationsCsv'])->name('chat.export.conversations');
 Route::get('/chat/export/faq', [ChatController::class, 'exportFaqCsv'])->name('chat.export.faq');
+
+// Routes pour la gestion FAQ (réservées aux membres Jadara)
+Route::middleware(['auth'])->prefix('faq')->name('faq.')->group(function () {
+    Route::get('/management', [\App\Http\Controllers\FaqManagementController::class, 'index'])->name('management');
+    Route::post('/management', [\App\Http\Controllers\FaqManagementController::class, 'store']);
+    Route::get('/management/{faq}', [\App\Http\Controllers\FaqManagementController::class, 'show']);
+    Route::put('/management/{faq}', [\App\Http\Controllers\FaqManagementController::class, 'update']);
+    Route::delete('/management/{faq}', [\App\Http\Controllers\FaqManagementController::class, 'destroy']);
+    Route::get('/management/export', [\App\Http\Controllers\FaqManagementController::class, 'export'])->name('export');
+    Route::post('/management/import', [\App\Http\Controllers\FaqManagementController::class, 'import'])->name('import');
+});
 
 // API Routes pour la FAQ
 Route::prefix('api')->group(function () {

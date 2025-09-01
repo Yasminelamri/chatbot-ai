@@ -47,14 +47,7 @@ export default function Index({ messages, conversationId, conversations }) {
   const [showArchives, setShowArchives] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const quickReplies = [
-    { text: '💰 Prolongation bourse', value: 'Comment demander une prolongation de ma bourse ?' },
-    { text: '📅 Date versement', value: 'À quelle date la bourse est-elle versée ?' },
-    { text: '📋 Documents annuels', value: 'Quels sont les documents à envoyer chaque année ?' },
-    { text: '❌ Problème bourse', value: "Je n'ai pas encore reçu ma bourse ce mois-ci, que faire ?" },
-    { text: '🏦 Changement RIB', value: 'Que faire si je change de compte bancaire ?' },
-    { text: '📞 Contact urgent', value: "À qui dois-je m'adresser en cas de problème urgent ?" }
-  ]
+  // Boutons de raccourcis supprimés
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -79,9 +72,7 @@ export default function Index({ messages, conversationId, conversations }) {
     })
   }
 
-  const handleQuickReply = (value) => {
-    setData('message', value)
-  }
+  // Fonction handleQuickReply supprimée
 
   const handlePickImage = (e) => {
     const file = e.target.files?.[0]
@@ -224,13 +215,23 @@ export default function Index({ messages, conversationId, conversations }) {
                 {showArchives ? '📤 Actives' : '📦 Archives'}
               </button>
             </div>
+            
+            {/* Lien vers la gestion FAQ pour les membres Jadara */}
+            <div className="mb-3">
+              <button
+                onClick={() => router.get('/faq/management')}
+                className="w-full bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+              >
+                📚 Gérer FAQ
+              </button>
+            </div>
 
             <div className="relative">
               <input 
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="🔍 Rechercher..." 
+                placeholder="Rechercher..." 
                 className="w-full px-3 py-2 pl-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -448,22 +449,7 @@ export default function Index({ messages, conversationId, conversations }) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Quick replies */}
-          {messages.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <div className="flex flex-wrap gap-2">
-                {quickReplies.map((q, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => handleQuickReply(q.value)} 
-                    className="px-3 py-2 rounded-full bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 text-sm font-medium transition-colors"
-                  >
-                    {q.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Boutons de raccourcis supprimés */}
 
           {/* Composer */}
           <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">

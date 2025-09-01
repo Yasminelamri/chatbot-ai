@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Pas de middleware global d'authentification pour le moment
+        // $middleware->web(append: []);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
