@@ -409,8 +409,65 @@
     </div>
 
     <script>
-        // Données FAQ simulées (en production, cela viendrait de la base de données)
-        let faqData = [
+        // Variables pour les données réelles de la base de données
+        let faqData = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        // Configuration API
+        const API_BASE = window.location.origin + '/api';
+        
+        // Headers pour les requêtes API
+        const getHeaders = () => ({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        });
+
+        // Charger les données réelles depuis l'API
+        async function loadRealData() {
+            try {
+                console.log('Chargement des données depuis l\'API...');
+                const response = await fetch(`${API_BASE}/faq`, {
+                    headers: getHeaders()
+                });
+                
+                console.log('Réponse API:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Données reçues:', data);
+                
+                if (data.success) {
+                    faqData = data.faqs.data || [];
+                    console.log('FAQs chargées:', faqData.length);
+                    updateStatsFromAPI(data.stats);
+                    loadFAQ();
+                    showAlert(`${faqData.length} questions chargées avec succès !`, 'success');
+                } else {
+                    throw new Error(data.message || 'Erreur lors du chargement');
+                }
+            } catch (error) {
+                console.error('Erreur complète:', error);
+                showAlert('Erreur de connexion à la base de données. Utilisation des données de démonstration.', 'error');
+                // Fallback vers les données simulées
+                loadSimulatedData();
+            }
+        }
+
+        function updateStatsFromAPI(stats) {
+            console.log('Mise à jour des stats:', stats);
+            document.getElementById('totalCount').textContent = stats.total || 0;
+            document.getElementById('recentCount').textContent = stats.recent || 0;
+            document.getElementById('updatedCount').textContent = stats.updated || 0;
+        }
+
+        // Données de fallback si l'API ne fonctionne pas
+        function loadSimulatedData() {
+            faqData = [
             {
                 id: 1,
                 question: "Comment demander une prolongation de ma bourse ?",
@@ -433,20 +490,15 @@
                 updated_at: "2025-01-25"
             }
         ];
+        
+        loadFAQ();
+        updateStats();
+        }
 
         let editingId = null;
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFAQ();
-            updateStats();
-            
-            // Event listeners
-            document.getElementById('searchInput').addEventListener('input', filterFAQ);
-            document.getElementById('faqForm').addEventListener('submit', handleSubmit);
-        });
-
         function loadFAQ() {
+            console.log('loadFAQ appelé avec', faqData.length, 'FAQs');
             const container = document.getElementById('faqContainer');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             
@@ -462,6 +514,7 @@
             
             if (filteredData.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">Aucune question trouvée</div>';
+                document.getElementById('faqCount').textContent = 0;
                 return;
             }
 
@@ -485,6 +538,7 @@
             });
 
             document.getElementById('faqCount').textContent = filteredData.length;
+            console.log('Interface mise à jour avec', filteredData.length, 'FAQs affichées');
         }
 
         function updateStats() {
@@ -534,7 +588,7 @@
             editingId = null;
         }
 
-        function handleSubmit(e) {
+        async function handleSubmit(e) {
             e.preventDefault();
             
             const question = document.getElementById('questionInput').value.trim();
@@ -545,32 +599,40 @@
                 return;
             }
 
-            if (editingId) {
-                // Modifier
-                const index = faqData.findIndex(faq => faq.id === editingId);
-                if (index !== -1) {
-                    faqData[index].question = question;
-                    faqData[index].answer = answer;
-                    faqData[index].updated_at = new Date().toISOString().split('T')[0];
-                    showAlert('Question modifiée avec succès !', 'success');
-                }
-            } else {
-                // Ajouter
-                const newId = Math.max(...faqData.map(f => f.id)) + 1;
-                const today = new Date().toISOString().split('T')[0];
-                faqData.push({
-                    id: newId,
-                    question: question,
-                    answer: answer,
-                    created_at: today,
-                    updated_at: today
-                });
-                showAlert('Question ajoutée avec succès !', 'success');
-            }
+            try {
+                const data = { question, answer };
+                let response, result;
 
-            closeModal();
-            loadFAQ();
-            updateStats();
+                if (editingId) {
+                    // Modifier via API sans CSRF
+                    response = await fetch(`${API_BASE}/no-csrf/faq/${editingId}`, {
+                        method: 'PUT',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // Ajouter via API sans CSRF
+                    response = await fetch(`${API_BASE}/no-csrf/faq`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                result = await response.json();
+
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    closeModal();
+                    // Recharger les données depuis l'API pour avoir les vraies stats
+                    await loadRealData();
+                } else {
+                    showAlert(result.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('Erreur de connexion. Opération échouée.', 'error');
+            }
         }
 
         function editFAQ(id) {
@@ -580,13 +642,28 @@
             }
         }
 
-        function deleteFAQ(id) {
+        async function deleteFAQ(id) {
             const faq = faqData.find(f => f.id === id);
             if (faq && confirm(`Êtes-vous sûr de vouloir supprimer cette question ?\n\n"${faq.question}"`)) {
-                faqData = faqData.filter(f => f.id !== id);
-                showAlert('Question supprimée avec succès !', 'success');
-                loadFAQ();
-                updateStats();
+                try {
+                    const response = await fetch(`${API_BASE}/no-csrf/faq/${id}`, {
+                        method: 'DELETE',
+                        headers: getHeaders()
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showAlert(result.message, 'success');
+                        // Recharger les données depuis l'API pour avoir les vraies stats
+                        await loadRealData();
+                    } else {
+                        showAlert(result.message || 'Erreur lors de la suppression', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showAlert('Erreur de connexion. Suppression échouée.', 'error');
+                }
             }
         }
 
@@ -630,6 +707,17 @@
         document.getElementById('faqModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeModal();
+            }
+        });
+
+        // Initialisation - Charger les données au démarrage
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadRealData();
+            
+            // Attacher l'événement submit au formulaire
+            const faqForm = document.getElementById('faqForm');
+            if (faqForm) {
+                faqForm.addEventListener('submit', handleSubmit);
             }
         });
     </script>

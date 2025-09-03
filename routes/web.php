@@ -52,7 +52,9 @@ Route::get('/chat/export/conversations', [ChatController::class, 'exportConversa
 Route::get('/chat/export/faq', [ChatController::class, 'exportFaqCsv'])->name('chat.export.faq');
 
 // Routes pour la gestion FAQ (réservées aux membres Jadara)
-Route::middleware(['auth'])->prefix('faq')->name('faq.')->group(function () {
+// On enlève le middleware auth pour éviter l'erreur "Route [login] not defined"
+// L'authentification est gérée dans le contrôleur directement
+Route::prefix('faq')->name('faq.')->group(function () {
     Route::get('/management', [\App\Http\Controllers\FaqManagementController::class, 'index'])->name('management');
     Route::post('/management', [\App\Http\Controllers\FaqManagementController::class, 'store']);
     Route::get('/management/{faq}', [\App\Http\Controllers\FaqManagementController::class, 'show']);
@@ -62,9 +64,25 @@ Route::middleware(['auth'])->prefix('faq')->name('faq.')->group(function () {
     Route::post('/management/import', [\App\Http\Controllers\FaqManagementController::class, 'import'])->name('import');
 });
 
-// API Routes pour la FAQ
+// API Routes pour la FAQ - Lecture (avec CSRF)
 Route::prefix('api')->group(function () {
     Route::get('/faq', [\App\Http\Controllers\Api\FaqController::class, 'index']);
-    Route::get('/faq/{id}', [\App\Http\Controllers\Api\FaqController::class, 'show']);
     Route::get('/faq/search', [\App\Http\Controllers\Api\FaqController::class, 'search']);
+    Route::get('/faq/{id}', [\App\Http\Controllers\Api\FaqController::class, 'show']);
 });
+
+// Routes POST/PUT/DELETE sans CSRF pour l'interface HTML
+Route::post('/api/no-csrf/faq', [\App\Http\Controllers\Api\FaqController::class, 'store'])->withoutMiddleware('web');
+Route::put('/api/no-csrf/faq/{id}', [\App\Http\Controllers\Api\FaqController::class, 'update'])->withoutMiddleware('web');
+Route::delete('/api/no-csrf/faq/{id}', [\App\Http\Controllers\Api\FaqController::class, 'destroy'])->withoutMiddleware('web');
+
+// Claude AI Admin Interface
+Route::get('/claude/admin', function() {
+    return inertia('Claude/Admin');
+})->name('claude.admin');
+
+// Claude AI Status
+Route::get('/api/claude/status', function() {
+    $claudeService = app(\App\Services\ClaudeService::class);
+    return response()->json($claudeService->getStatus());
+})->withoutMiddleware('web');

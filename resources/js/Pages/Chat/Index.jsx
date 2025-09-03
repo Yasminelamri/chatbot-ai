@@ -217,12 +217,19 @@ export default function Index({ messages, conversationId, conversations }) {
             </div>
             
             {/* Lien vers la gestion FAQ pour les membres Jadara */}
-            <div className="mb-3">
+            <div className="mb-3 space-y-2">
               <button
-                onClick={() => router.get('/faq/management')}
+                onClick={() => window.open('/faq-management.html', '_blank')}
                 className="w-full bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
               >
                 📚 Gérer FAQ
+              </button>
+              
+              <button
+                onClick={() => window.open('/claude-admin.html', '_blank')}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all transform hover:scale-105"
+              >
+                🤖 Claude AI
               </button>
             </div>
 

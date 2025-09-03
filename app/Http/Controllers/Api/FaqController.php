@@ -3,107 +3,177 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\FAQ;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
 
 class FaqController extends Controller
 {
     /**
-     * Récupère la FAQ depuis le fichier JSON
-     *
-     * @return JsonResponse
+     * Obtenir toutes les FAQ avec pagination
      */
-    public function index(): JsonResponse
+    public function index(Request $request)
+    {
+        $search = $request->get('search', '');
+        $perPage = $request->get('per_page', 10);
+        
+        $faqs = FAQ::query()
+            ->when($search, function ($query) use ($search) {
+                $query->where('question', 'like', "%{$search}%")
+                      ->orWhere('answer', 'like', "%{$search}%");
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        $stats = [
+            'total' => FAQ::count(),
+            'recent' => FAQ::where('created_at', '>=', now()->subDays(7))->count(),
+            'updated' => FAQ::where('updated_at', '>=', now()->subDays(7))
+                          ->where('updated_at', '>', FAQ::raw('created_at'))
+                          ->count(),
+        ];
+
+        return response()->json([
+            'faqs' => $faqs,
+            'stats' => $stats,
+            'success' => true
+        ]);
+    }
+
+    /**
+     * Créer une nouvelle FAQ
+     */
+    public function store(Request $request)
     {
         try {
-            // Récupérer la FAQ depuis la base de données
-            $faqData = \App\Models\FAQ::all(['id', 'question', 'answer']);
-            
-            // Retourner la FAQ
-            return response()->json($faqData, 200);
+            $validated = $request->validate([
+                'question' => 'required|string|max:500|unique:faq,question',
+                'answer' => 'required|string|max:2000',
+            ]);
 
-        } catch (\Exception $e) {
-            // Log de l'erreur pour le débogage
-            \Log::error('Erreur lors de la lecture de la FAQ: ' . $e->getMessage());
-            
-            // Retourner une erreur 500 avec un message générique
+            $faq = FAQ::create($validated);
+
             return response()->json([
-                'error' => 'Erreur interne du serveur',
-                'message' => 'Impossible de récupérer la FAQ pour le moment'
-            ], 500);
+                'faq' => $faq,
+                'message' => 'Question ajoutée avec succès !',
+                'success' => true
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la création : ' . $e->getMessage(),
+                'success' => false
+            ], 422);
         }
     }
 
     /**
-     * Récupère une question spécifique par son index
-     *
-     * @param int $id
-     * @return JsonResponse
+     * Obtenir une FAQ spécifique
      */
-    public function show(int $id): JsonResponse
+    public function show($id)
+    {
+        $faq = FAQ::find($id);
+        
+        if (!$faq) {
+            return response()->json([
+                'message' => 'FAQ non trouvée',
+                'success' => false
+            ], 404);
+        }
+
+        return response()->json([
+            'faq' => $faq,
+            'success' => true
+        ]);
+    }
+
+    /**
+     * Mettre à jour une FAQ
+     */
+    public function update(Request $request, $id)
     {
         try {
-            // Récupérer la question depuis la base de données
-            $faqItem = \App\Models\FAQ::find($id);
+            $faq = FAQ::find($id);
             
-            if (!$faqItem) {
+            if (!$faq) {
                 return response()->json([
-                    'error' => 'Question non trouvée',
-                    'message' => 'Aucune question trouvée avec cet identifiant'
+                    'message' => 'FAQ non trouvée',
+                    'success' => false
                 ], 404);
             }
 
-            // Retourner la question spécifique
-            return response()->json($faqItem, 200);
+            $validated = $request->validate([
+                'question' => 'required|string|max:500|unique:faq,question,' . $id,
+                'answer' => 'required|string|max:2000',
+            ]);
 
-        } catch (\Exception $e) {
-            // Log de l'erreur pour le débogage
-            \Log::error('Erreur lors de la lecture de la question FAQ: ' . $e->getMessage());
-            
-            // Retourner une erreur 500 avec un message générique
+            $faq->update($validated);
+
             return response()->json([
-                'error' => 'Erreur interne du serveur',
-                'message' => 'Impossible de récupérer la question pour le moment'
+                'faq' => $faq,
+                'message' => 'Question modifiée avec succès !',
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la modification : ' . $e->getMessage(),
+                'success' => false
+            ], 422);
+        }
+    }
+
+    /**
+     * Supprimer une FAQ
+     */
+    public function destroy($id)
+    {
+        try {
+            $faq = FAQ::find($id);
+            
+            if (!$faq) {
+                return response()->json([
+                    'message' => 'FAQ non trouvée',
+                    'success' => false
+                ], 404);
+            }
+
+            $faq->delete();
+
+            return response()->json([
+                'message' => 'Question supprimée avec succès !',
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la suppression : ' . $e->getMessage(),
+                'success' => false
             ], 500);
         }
     }
 
     /**
-     * Recherche dans la FAQ par mot-clé
-     *
-     * @param Request $request
-     * @return JsonResponse
+     * Rechercher dans les FAQ
      */
-    public function search(Request $request): JsonResponse
+    public function search(Request $request)
     {
-        try {
-            $query = $request->get('q', '');
-            
-            if (empty($query)) {
-                return response()->json([
-                    'error' => 'Requête vide',
-                    'message' => 'Veuillez fournir un terme de recherche'
-                ], 400);
-            }
-
-            // Rechercher dans la base de données
-            $results = \App\Models\FAQ::where('question', 'like', "%{$query}%")
-                ->orWhere('answer', 'like', "%{$query}%")
-                ->get(['id', 'question', 'answer']);
-
-            // Retourner les résultats de recherche
-            return response()->json($results, 200);
-
-        } catch (\Exception $e) {
-            // Log de l'erreur pour le débogage
-            \Log::error('Erreur lors de la recherche dans la FAQ: ' . $e->getMessage());
-            
-            // Retourner une erreur 500 avec un message générique
+        $query = $request->get('q', '');
+        
+        if (empty($query)) {
             return response()->json([
-                'error' => 'Erreur interne du serveur',
-                'message' => 'Impossible de rechercher dans la FAQ pour le moment'
-            ], 500);
+                'faqs' => [],
+                'message' => 'Aucun terme de recherche fourni',
+                'success' => false
+            ], 400);
         }
+
+        $faqs = FAQ::where('question', 'like', "%{$query}%")
+                   ->orWhere('answer', 'like', "%{$query}%")
+                   ->orderBy('created_at', 'desc')
+                   ->limit(20)
+                   ->get();
+
+        return response()->json([
+            'faqs' => $faqs,
+            'count' => $faqs->count(),
+            'success' => true
+        ]);
     }
 }

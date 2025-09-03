@@ -107,17 +107,29 @@ class ChatController extends Controller
                 } else {
                     $botResponse = "👋 Bienvenue sur Jadara ! Posez vos questions sur la bourse (prolongation, versement, documents, changement RIB).";
                 }
-            } elseif ($this->isGreeting($text)) {
-                if ($currentUser && $currentUser->role === 'jadara') {
-                    $botResponse = "Bonjour {$currentUser->name} 👋 Que voulez-vous gérer aujourd'hui ? (FAQ, demandes, export)";
-                } elseif ($currentUser) {
-                    $botResponse = "Bonjour {$currentUser->name} 👋 Comment puis-je vous aider pour votre bourse ?";
-                } else {
-                    $botResponse = "Bonjour 👋 Que souhaitez-vous savoir aujourd'hui ? (ex: prolongation bourse, documents annuels, versement, changement RIB)";
-                }
             } else {
-                // Utiliser le système de mots-clés intelligent
-                $botResponse = $this->generateSmartResponse($text);
+                // SYSTÈME HYBRIDE INTELLIGENT : FAQ → Claude → Mots-clés → Défaut
+                
+                // 1. D'ABORD : Chercher dans la FAQ (rapide et gratuit)
+                $faqResult = $this->searchInFAQ($text);
+                if ($faqResult) {
+                    $botResponse = $faqResult;
+                } elseif ($this->shouldUseClaudeAI($text)) {
+                    // 2. CLAUDE AI : Pour questions complexes ou non trouvées
+                    $botResponse = $this->getClaudeResponse($text);
+                } elseif ($this->isGreeting($text)) {
+                    // 3. Salutations classiques
+                    if ($currentUser && $currentUser->role === 'jadara') {
+                        $botResponse = "Bonjour {$currentUser->name} 👋 Que voulez-vous gérer aujourd'hui ? (FAQ, demandes, export)";
+                    } elseif ($currentUser) {
+                        $botResponse = "Bonjour {$currentUser->name} 👋 Comment puis-je vous aider pour votre bourse ?";
+                    } else {
+                        $botResponse = "Bonjour 👋 Que souhaitez-vous savoir aujourd'hui ? (ex: prolongation bourse, documents annuels, versement, changement RIB)";
+                    }
+                } else {
+                    // 4. ENFIN : Système de mots-clés intelligent
+                    $botResponse = $this->generateSmartResponse($text);
+                }
             }
         }
 
@@ -293,6 +305,123 @@ class ChatController extends Controller
                "• Utiliser des mots-clés comme 'bourse', 'versement', 'RIB', 'documents', 'formation', 'projet'\n" .
                "• Reformuler votre question de manière plus détaillée\n" .
                "• Consulter notre FAQ complète dans la section 'Aide'";
+    }
+
+    /**
+     * Détermine si on doit utiliser Claude AI
+     */
+    private function shouldUseClaudeAI(string $text): bool
+    {
+        // Utilise Claude pour :
+        // - Questions longues et complexes
+        // - Questions sur l'avenir, l'innovation, l'IA
+        // - Questions non couvertes par la FAQ
+        
+        $complexityIndicators = [
+            'comment', 'pourquoi', 'expliquez', 'analysez', 'comparez',
+            'avenir', 'futur', 'développement', 'innovation', 'intelligence',
+            'ia', 'claude', 'technologie', 'amélioration', 'optimisation',
+            'stratégie', 'vision', 'objectifs', 'recommandation'
+        ];
+        
+        $normalizedText = $this->normalizeText($text);
+        
+        // Questions longues (plus de 50 caractères)
+        if (strlen($text) > 50) {
+            return true;
+        }
+        
+        // Contient des indicateurs de complexité
+        foreach ($complexityIndicators as $indicator) {
+            if (str_contains($normalizedText, $indicator)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Obtient une réponse de Claude AI
+     */
+    private function getClaudeResponse(string $text): string
+    {
+        try {
+            $claudeService = app(\App\Services\ClaudeService::class);
+            
+            if (!$claudeService->isAvailable()) {
+                return $this->generateSmartResponse($text);
+            }
+            
+            // Récupère le contexte FAQ pour Claude
+            $faqContext = $this->getFAQContext();
+            
+            $response = $claudeService->generateResponse($text, [
+                'faq_data' => $faqContext
+            ]);
+            
+            return $response;
+            
+        } catch (\Exception $e) {
+            // Fallback vers le système classique en cas d'erreur
+            return $this->generateSmartResponse($text);
+        }
+    }
+
+    /**
+     * Récupère le contexte FAQ pour Claude
+     */
+    private function getFAQContext(): array
+    {
+        try {
+            $faq = app(\App\Models\FAQ::class);
+            return $faq::limit(10)->get(['question', 'answer'])->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Recherche dans la FAQ de la base de données
+     */
+    private function searchInFAQ(string $text): ?string
+    {
+        // Import du modèle FAQ
+        $faq = app(\App\Models\FAQ::class);
+        
+        $normalizedText = $this->normalizeText($text);
+        
+        // Recherche exacte dans les questions
+        $result = $faq::where('question', 'like', "%{$text}%")
+                     ->orWhere('question', 'like', "%{$normalizedText}%")
+                     ->first();
+        
+        if ($result) {
+            return $result->answer;
+        }
+        
+        // Recherche par mots-clés dans les questions et réponses
+        $keywords = explode(' ', $normalizedText);
+        $keywords = array_filter($keywords, fn($k) => strlen($k) > 2); // Mots de plus de 2 caractères
+        
+        if (count($keywords) > 0) {
+            $query = $faq::query();
+            
+            foreach ($keywords as $keyword) {
+                $query->where(function($q) use ($keyword) {
+                    $q->where('question', 'like', "%{$keyword}%")
+                      ->orWhere('answer', 'like', "%{$keyword}%");
+                });
+            }
+            
+            $result = $query->first();
+            
+            if ($result) {
+                return $result->answer;
+            }
+        }
+        
+        return null;
     }
 
     private function normalizeText(string $s): string
