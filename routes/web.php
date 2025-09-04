@@ -86,3 +86,28 @@ Route::get('/api/claude/status', function() {
     $claudeService = app(\App\Services\ClaudeService::class);
     return response()->json($claudeService->getStatus());
 })->withoutMiddleware('web');
+
+// FAQ Admin Interface (Sécurisée)
+Route::get('/admin/faq', function () {
+    return inertia('Admin/FaqAdmin');
+})->name('admin.faq')->middleware('admin.auth');
+
+Route::post('/admin/faq', function () {
+    return inertia('Admin/FaqAdmin');
+})->name('admin.faq.login')->middleware('admin.auth');
+
+// Route de déconnexion admin
+Route::post('/admin/logout', function () {
+    session()->forget('admin_authenticated');
+    return redirect()->route('chat.index')->with('success', 'Déconnexion réussie');
+})->name('admin.logout');
+
+// Route pour obtenir le token CSRF
+Route::get('/api/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->withoutMiddleware('web');
+
+// Route pour la nouvelle interface d'administration FAQ simple
+Route::get('/admin/faq-simple', function () {
+    return response()->file(public_path('admin-faq-simple.html'));
+})->name('admin.faq.simple');

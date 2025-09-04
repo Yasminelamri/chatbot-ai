@@ -219,10 +219,17 @@ export default function Index({ messages, conversationId, conversations }) {
             {/* Lien vers la gestion FAQ pour les membres Jadara */}
             <div className="mb-3 space-y-2">
               <button
+                onClick={() => window.open('/admin/faq-simple', '_blank')}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105"
+              >
+                🛠️ Admin FAQ
+              </button>
+              
+              <button
                 onClick={() => window.open('/faq-management.html', '_blank')}
                 className="w-full bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
               >
-                📚 Gérer FAQ
+                📚 Gérer FAQ (HTML)
               </button>
               
               <button

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Administration FAQ - Jadara</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            background-color: #10B981;
+        }
+        .notification.error {
+            background-color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-gray-900">📚 Administration FAQ</h1>
+                    <span class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">Jadara Foundation</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white border rounded-lg px-4 py-2">
+                        <span class="text-sm text-gray-600">Total FAQs:</span>
+                        <span id="totalCount" class="ml-2 font-bold text-blue-600">0</span>
+                    </div>
+                    <button onclick="window.open('/chat', '_blank')" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        🏠 Retour au Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Actions Bar -->
+        <div class="mb-6 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <button id="addFaqBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2">
+                    <span>➕</span>
+                    <span>Ajouter FAQ</span>
+                </button>
+                <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors">
+                    🔄 Actualiser
+                </button>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="flex items-center space-x-4">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="🔍 Rechercher dans les FAQs..."
+                    class="border border-gray-300 rounded-lg px-4 py-2 w-80 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg p-6 shadow-sm border">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <span class="text-2xl">📊</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Total Questions</p>
+                        <p id="statTotal" class="text-2xl font-bold text-blue-600">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-6 shadow-sm border">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <span class="text-2xl">🆕</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Ajoutées (7j)</p>
+                        <p id="statAdded" class="text-2xl font-bold text-green-600">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-6 shadow-sm border">
+                <div class="flex items-center">
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <span class="text-2xl">✏️</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Modifiées (7j)</p>
+                        <p id="statModified" class="text-2xl font-bold text-orange-600">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-6 shadow-sm border">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <span class="text-2xl">🏷️</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Tags Uniques</p>
+                        <p id="statTags" class="text-2xl font-bold text-purple-600">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQs List -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-semibold text-gray-900">Questions FAQ</h2>
+                <p class="text-gray-600 mt-1">Gérez les questions et réponses du chatbot Jadara</p>
+            </div>
+            
+            <div id="faqsList" class="divide-y">
+                <!-- FAQs will be loaded here -->
+            </div>
+            
+            <div id="loadingState" class="p-12 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-gray-600">Chargement des FAQs...</p>
+            </div>
+            
+            <div id="emptyState" class="p-12 text-center hidden">
+                <div class="text-6xl mb-4">📝</div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Aucune FAQ trouvée</h3>
+                <p class="text-gray-600 mb-6">Commencez par ajouter votre première question-réponse</p>
+                <button onclick="openAddModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium">
+                    ➕ Ajouter votre première FAQ
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div id="faqModal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex items-center justify-between">
+                    <h3 id="modalTitle" class="text-xl font-semibold text-gray-900">➕ Ajouter une FAQ</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                </div>
+            </div>
+            
+            <form id="faqForm" class="p-6 space-y-6">
+                <input type="hidden" id="faqId" value="">
+                
+                <!-- Question Field -->
+                <div>
+                    <label for="questionInput" class="block text-sm font-medium text-gray-700 mb-2">
+                        ❓ Question <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="questionInput" 
+                        required
+                        placeholder="Ex: Comment demander une prolongation de ma bourse ?"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                </div>
+                
+                <!-- Answer Field -->
+                <div>
+                    <label for="answerInput" class="block text-sm font-medium text-gray-700 mb-2">
+                        ✅ Réponse <span class="text-red-500">*</span>
+                    </label>
+                    <textarea 
+                        id="answerInput" 
+                        required
+                        rows="5"
+                        placeholder="Ex: Chaque année, un mail explicatif vous est envoyé fin décembre..."
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    ></textarea>
+                </div>
+                
+                <!-- Tags Field -->
+                <div>
+                    <label for="tagsInput" class="block text-sm font-medium text-gray-700 mb-2">
+                        🏷️ Tags <span class="text-gray-500">(séparés par des virgules)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="tagsInput" 
+                        placeholder="Ex: bourse, prolongation, aide, étudiant"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                    <p class="text-xs text-gray-500 mt-1">Les tags aident à organiser et retrouver les FAQs</p>
+                </div>
+                
+                <!-- Multi-language Support (Optional) -->
+                <div class="border-t pt-6">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">🌍 Support Multi-langues (Optionnel)</h4>
+                    
+                    <!-- Arabic Question -->
+                    <div class="mb-4">
+                        <label for="questionAr" class="block text-sm font-medium text-gray-700 mb-2">
+                            ❓ Question (Arabe)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="questionAr" 
+                            placeholder="السؤال باللغة العربية"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            dir="rtl"
+                        >
+                    </div>
+                    
+                    <!-- Arabic Answer -->
+                    <div>
+                        <label for="answerAr" class="block text-sm font-medium text-gray-700 mb-2">
+                            ✅ Réponse (Arabe)
+                        </label>
+                        <textarea 
+                            id="answerAr" 
+                            rows="4"
+                            placeholder="الجواب باللغة العربية"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            dir="rtl"
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-6 border-t">
+                    <button type="button" onclick="closeModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" id="submitBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                        ✅ Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let faqs = [];
+        let isEditing = false;
+        let editingId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFaqs();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Add FAQ button
+            document.getElementById('addFaqBtn').addEventListener('click', openAddModal);
+            
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', loadFaqs);
+            
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', filterFaqs);
+            
+            // Form submission
+            document.getElementById('faqForm').addEventListener('submit', handleFormSubmit);
+            
+            // Modal close on background click
+            document.getElementById('faqModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+        }
+
+        async function loadFaqs() {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/faq');
+                const data = await response.json();
+                
+                // Extract FAQs from response
+                faqs = data.faqs?.data || data.data || data || [];
+                
+                renderFaqs();
+                updateStatistics();
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des FAQs:', error);
+                showNotification('Erreur lors du chargement des FAQs', 'error');
+                showLoading(false);
+            }
+        }
+
+        function renderFaqs(filteredFaqs = null) {
+            const faqsToRender = filteredFaqs || faqs;
+            const container = document.getElementById('faqsList');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (faqsToRender.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            container.innerHTML = faqsToRender.map((faq, index) => `
+                <div class="p-6 hover:bg-gray-50 transition-colors fade-in">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span class="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                    ${index + 1}
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    ID: ${faq.id} | Créé le ${new Date(faq.created_at).toLocaleDateString('fr-FR')}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-2">
+                                    ❓ ${faq.question}
+                                </h4>
+                                <p class="text-gray-700 leading-relaxed">
+                                    ✅ ${faq.answer}
+                                </p>
+                            </div>
+                            
+                            ${faq.tags ? `
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    ${faq.tags.split(',').map(tag => `
+                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                            🏷️ ${tag.trim()}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${faq.question_ar || faq.answer_ar ? `
+                                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">🌍 Version Arabe:</h5>
+                                    ${faq.question_ar ? `<p class="text-right text-gray-800 mb-2" dir="rtl">❓ ${faq.question_ar}</p>` : ''}
+                                    ${faq.answer_ar ? `<p class="text-right text-gray-700" dir="rtl">✅ ${faq.answer_ar}</p>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 ml-4">
+                            <button 
+                                onclick="editFaq(${faq.id})"
+                                class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                title="Modifier"
+                            >
+                                ✏️
+                            </button>
+                            <button 
+                                onclick="deleteFaq(${faq.id})"
+                                class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                title="Supprimer"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStatistics() {
+            const total = faqs.length;
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            const added = faqs.filter(faq => new Date(faq.created_at) > oneWeekAgo).length;
+            const modified = faqs.filter(faq => new Date(faq.updated_at) > oneWeekAgo && faq.created_at !== faq.updated_at).length;
+            
+            // Count unique tags
+            const allTags = faqs
+                .filter(faq => faq.tags)
+                .flatMap(faq => faq.tags.split(',').map(tag => tag.trim().toLowerCase()))
+                .filter((tag, index, arr) => arr.indexOf(tag) === index);
+            
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statAdded').textContent = added;
+            document.getElementById('statModified').textContent = modified;
+            document.getElementById('statTags').textContent = allTags.length;
+        }
+
+        function filterFaqs() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                renderFaqs();
+                return;
+            }
+            
+            const filtered = faqs.filter(faq => 
+                faq.question.toLowerCase().includes(searchTerm) ||
+                faq.answer.toLowerCase().includes(searchTerm) ||
+                (faq.tags && faq.tags.toLowerCase().includes(searchTerm)) ||
+                (faq.question_ar && faq.question_ar.includes(searchTerm)) ||
+                (faq.answer_ar && faq.answer_ar.includes(searchTerm))
+            );
+            
+            renderFaqs(filtered);
+        }
+
+        function openAddModal() {
+            isEditing = false;
+            editingId = null;
+            document.getElementById('modalTitle').textContent = '➕ Ajouter une FAQ';
+            document.getElementById('submitBtn').textContent = '✅ Enregistrer';
+            
+            // Clear form
+            document.getElementById('faqForm').reset();
+            document.getElementById('faqId').value = '';
+            
+            document.getElementById('faqModal').classList.add('active');
+        }
+
+        function editFaq(id) {
+            const faq = faqs.find(f => f.id === id);
+            if (!faq) return;
+            
+            isEditing = true;
+            editingId = id;
+            document.getElementById('modalTitle').textContent = '✏️ Modifier la FAQ';
+            document.getElementById('submitBtn').textContent = '✅ Mettre à jour';
+            
+            // Fill form
+            document.getElementById('faqId').value = faq.id;
+            document.getElementById('questionInput').value = faq.question;
+            document.getElementById('answerInput').value = faq.answer;
+            document.getElementById('tagsInput').value = faq.tags || '';
+            document.getElementById('questionAr').value = faq.question_ar || '';
+            document.getElementById('answerAr').value = faq.answer_ar || '';
+            
+            document.getElementById('faqModal').classList.add('active');
+        }
+
+        async function deleteFaq(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette FAQ ?')) return;
+            
+            try {
+                const response = await fetch(`/api/faq/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': await getCsrfToken()
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('FAQ supprimée avec succès', 'success');
+                    loadFaqs();
+                } else {
+                    throw new Error('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de la suppression', 'error');
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                question: document.getElementById('questionInput').value.trim(),
+                answer: document.getElementById('answerInput').value.trim(),
+                tags: document.getElementById('tagsInput').value.trim(),
+                question_ar: document.getElementById('questionAr').value.trim(),
+                answer_ar: document.getElementById('answerAr').value.trim()
+            };
+            
+            if (!formData.question || !formData.answer) {
+                showNotification('Question et réponse sont obligatoires', 'error');
+                return;
+            }
+            
+            try {
+                const url = isEditing ? `/api/faq/${editingId}` : '/api/faq';
+                const method = isEditing ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': await getCsrfToken()
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const message = isEditing ? 'FAQ mise à jour avec succès' : 'FAQ ajoutée avec succès';
+                    showNotification(message, 'success');
+                    closeModal();
+                    loadFaqs();
+                } else {
+                    throw new Error('Erreur lors de l\'enregistrement');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de l\'enregistrement', 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('faqModal').classList.remove('active');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingState').style.display = show ? 'block' : 'none';
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        async function getCsrfToken() {
+            try {
+                const response = await fetch('/api/csrf-token');
+                const data = await response.json();
+                return data.token;
+            } catch (error) {
+                console.error('Erreur CSRF:', error);
+                return '';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -19,7 +19,10 @@ class FaqController extends Controller
         $faqs = FAQ::query()
             ->when($search, function ($query) use ($search) {
                 $query->where('question', 'like', "%{$search}%")
-                      ->orWhere('answer', 'like', "%{$search}%");
+                      ->orWhere('answer', 'like', "%{$search}%")
+                      ->orWhere('tags', 'like', "%{$search}%")
+                      ->orWhere('question_ar', 'like', "%{$search}%")
+                      ->orWhere('answer_ar', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -46,8 +49,11 @@ class FaqController extends Controller
     {
         try {
             $validated = $request->validate([
-                'question' => 'required|string|max:500|unique:faq,question',
-                'answer' => 'required|string|max:2000',
+                'question' => 'required|string|max:1000',
+                'answer' => 'required|string|max:5000',
+                'tags' => 'nullable|string|max:500',
+                'question_ar' => 'nullable|string|max:1000',
+                'answer_ar' => 'nullable|string|max:5000',
             ]);
 
             $faq = FAQ::create($validated);
@@ -101,8 +107,11 @@ class FaqController extends Controller
             }
 
             $validated = $request->validate([
-                'question' => 'required|string|max:500|unique:faq,question,' . $id,
-                'answer' => 'required|string|max:2000',
+                'question' => 'required|string|max:1000',
+                'answer' => 'required|string|max:5000',
+                'tags' => 'nullable|string|max:500',
+                'question_ar' => 'nullable|string|max:1000',
+                'answer_ar' => 'nullable|string|max:5000',
             ]);
 
             $faq->update($validated);
